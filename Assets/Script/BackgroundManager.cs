@@ -1,90 +1,92 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using System.Collections;
+using System.Collections.Generic;
+
+[System.Serializable]
+public class SceneBackgroundSet
+{
+    public string sceneName;
+    public GameObject[] backgrounds; // [Easy, Medium, Hard]
+}
 
 public class BackgroundManager : MonoBehaviour
 {
-    public GameObject[] backgrounds; // Should be size 3
+    [Header("Scene Background Configurations")]
+    public List<SceneBackgroundSet> sceneBackgrounds;
+
+    [Header("Fade Settings")]
+    public Image fadeOverlayImage;
     public float transitionDuration = 1.5f;
-    public float switchInterval = 60f; // me random change background every 60s
 
-    public Image fadeOverlayImage; 
-
-    private int currentBackgroundIndex = 0;
-    private Coroutine switchRoutine;
-    private bool isSwitchingRandom = false;
+    private GameObject[] currentSceneBackgrounds;
+    private int currentBackgroundIndex = -1;
 
     void Start()
     {
-        fadeOverlayImage.color = new Color(0f, 0f, 0f, 0f);
-        //UpdateBackground(GameManager.Instance.difficultyLevel);
+        if (fadeOverlayImage != null)
+            fadeOverlayImage.color = new Color(0f, 0f, 0f, 0f);
+
+        LoadSceneSpecificBackgrounds();
+        UpdateBackground(GameManager.Instance.difficultyLevel); // Show initial
     }
 
     void Update()
     {
-        int currentLevel = GameManager.Instance.difficultyLevel;
-        if (currentLevel != currentBackgroundIndex)
+        if (currentSceneBackgrounds == null || currentSceneBackgrounds.Length == 0)
+            return;
+
+        int level = GameManager.Instance != null ? GameManager.Instance.difficultyLevel : 0;
+
+        if (level != currentBackgroundIndex)
         {
-            UpdateBackground(currentLevel);
+            UpdateBackground(level);
         }
+    }
+
+    void LoadSceneSpecificBackgrounds()
+    {
+        string sceneName = SceneManager.GetActiveScene().name;
+
+        foreach (SceneBackgroundSet set in sceneBackgrounds)
+        {
+            if (set.sceneName == sceneName)
+            {
+                currentSceneBackgrounds = set.backgrounds;
+
+                foreach (GameObject bg in currentSceneBackgrounds)
+                    if (bg != null) bg.SetActive(false);
+
+                return;
+            }
+        }
+
+        Debug.LogWarning("No background set found for scene: " + sceneName);
     }
 
     void UpdateBackground(int difficulty)
     {
-        if (difficulty < 3)
-        {
-            if (isSwitchingRandom && switchRoutine != null)
-            {
-                StopCoroutine(switchRoutine);
-                isSwitchingRandom = false;
-            }
-
-            StartCoroutine(SwitchWithFade(difficulty));
-        }
-        else
-        {
-            if (!isSwitchingRandom)
-            {
-                isSwitchingRandom = true;
-                switchRoutine = StartCoroutine(RandomSwitchRoutine());
-            }
-        }
+        int index = Mathf.Clamp(difficulty, 0, currentSceneBackgrounds.Length - 1);
+        StartCoroutine(SwitchWithFade(index));
     }
 
     IEnumerator SwitchWithFade(int newIndex)
     {
         yield return StartCoroutine(FadeInOverlay());
-
         SetBackground(newIndex);
-
         yield return StartCoroutine(FadeOutOverlay());
     }
 
     void SetBackground(int index)
     {
-        if (index == currentBackgroundIndex) return;
-        if (index < 0 || index >= backgrounds.Length) return;
+        if (currentSceneBackgrounds == null || index == currentBackgroundIndex)
+            return;
 
-        for (int i = 0; i < backgrounds.Length; i++)
-        {
-            backgrounds[i].SetActive(i == index);
-        }
+        for (int i = 0; i < currentSceneBackgrounds.Length; i++)
+            currentSceneBackgrounds[i].SetActive(i == index);
 
         currentBackgroundIndex = index;
-    }
-
-    IEnumerator RandomSwitchRoutine()
-    {
-        while (true)
-        {
-            int newIndex = Random.Range(0, backgrounds.Length);
-            while (newIndex == currentBackgroundIndex)
-                newIndex = Random.Range(0, backgrounds.Length);
-
-            yield return StartCoroutine(SwitchWithFade(newIndex));
-
-            yield return new WaitForSeconds(switchInterval);
-        }
     }
 
     IEnumerator FadeInOverlay()
@@ -93,11 +95,15 @@ public class BackgroundManager : MonoBehaviour
         while (t < transitionDuration)
         {
             float alpha = Mathf.Lerp(0f, 1f, t / transitionDuration);
-            fadeOverlayImage.color = new Color(0f, 0f, 0f, alpha);
+            if (fadeOverlayImage != null)
+                fadeOverlayImage.color = new Color(0f, 0f, 0f, alpha);
+
             t += Time.deltaTime;
             yield return null;
         }
-        fadeOverlayImage.color = new Color(0f, 0f, 0f, 1f);
+
+        if (fadeOverlayImage != null)
+            fadeOverlayImage.color = new Color(0f, 0f, 0f, 1f);
     }
 
     IEnumerator FadeOutOverlay()
@@ -106,10 +112,14 @@ public class BackgroundManager : MonoBehaviour
         while (t < transitionDuration)
         {
             float alpha = Mathf.Lerp(1f, 0f, t / transitionDuration);
-            fadeOverlayImage.color = new Color(0f, 0f, 0f, alpha);
-            t += Time.deltaTime;
+            if (fadeOverlayImage != null)
+                fadeOverlayImage.color = new Color(0f, 0f, 0f, alpha);
+
+            t += Time.deltaTime;  
             yield return null;
         }
-        fadeOverlayImage.color = new Color(0f, 0f, 0f, 0f);
+
+        if (fadeOverlayImage != null)
+            fadeOverlayImage.color = new Color(0f, 0f, 0f, 0f);
     }
 }

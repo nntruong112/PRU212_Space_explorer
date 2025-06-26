@@ -37,11 +37,11 @@ public class GameManager : MonoBehaviour
 
     void UpdateDifficulty()
     {
-        if (score >= 4000)
+        if (score >= 50000)
             difficultyLevel = 3;
-        else if (score >= 2000)
+        else if (score >= 20000)
             difficultyLevel = 2;
-        else if (score >= 1000)
+        else if (score >= 5000)
             difficultyLevel = 1;
         else
             difficultyLevel = 0;
@@ -124,12 +124,6 @@ public class GameManager : MonoBehaviour
     public void HandleGameOver()
     {
         AudioManager.StopMusic();
-
-        BackgroundManager bgManager = FindObjectOfType<BackgroundManager>();
-        if (bgManager != null && bgManager.fadeOverlayImage != null)
-        {
-            bgManager.fadeOverlayImage.enabled = false;
-        }
 
         float finalScore = score;
         string dateTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm");

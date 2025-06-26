@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8127367820109605604
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4473410783327827392}
+  - component: {fileID: 2552597165108805339}
+  m_Layer: 1
+  m_Name: AsteroidSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4473410783327827392
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8127367820109605604}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.19421, y: -0.62722, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2552597165108805339
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8127367820109605604}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e23c94ae8f6ff4c469124830d2793e1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  largeAsteroid:
+  - {fileID: 8822187484687712519, guid: 5d24706404473704da91c4fe9e4f91e8, type: 3}
+  - {fileID: 8521680149424617436, guid: a26881131b248414ca2ed882d3243f2d, type: 3}
+  - {fileID: 8008413732058111870, guid: adb286eeca7103d4bb00a06ac15396a0, type: 3}
+  mediumAsteroid:
+  - {fileID: 2735685691274431625, guid: 9dabcafd9f60e3e438ad3a4ad24454e5, type: 3}
+  - {fileID: 2018423492026984558, guid: 2f963f7d7eea73c4bad6cca67fd60e1d, type: 3}
+  - {fileID: 4280188881959052215, guid: 307df1ff47e045848909d064b79a6a70, type: 3}
+  - {fileID: 3864262253969547682, guid: 3cea65e16ebf244478f796a5a01c6a21, type: 3}
+  smallAsteroid:
+  - {fileID: 781973199366486175, guid: 0266fffdd95674a45bf66c465937d797, type: 3}
+  - {fileID: 1583318592092602296, guid: 03d582d6e0810934fa18a627f7221f75, type: 3}
+  - {fileID: 2201881526363786946, guid: d5aa918dd00944b4c94a7672ca70a086, type: 3}
+  - {fileID: 3328228412478147391, guid: 5ee858cc9d662084caceee87abddc202, type: 3}
+  - {fileID: 2708588500745728875, guid: 5da3020c38fe9134887a9ca6510d2539, type: 3}
+  baseSpawnInterval: 1
+  spawningEnabled: 1

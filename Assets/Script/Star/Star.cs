@@ -3,7 +3,6 @@ using UnityEngine;
 public class Star : MonoBehaviour
 {
     public float scoreValue = 100f;
-    public float speed = 2f;
     public AudioClip collectSound;
 
     void Start()
@@ -13,7 +12,7 @@ public class Star : MonoBehaviour
     }
     void PlayCollectSound()
     {
-        AudioManager.PlayClip(collectSound, transform.position);
+        AudioManager.PlayClip(collectSound, transform.position, 0.3f);
     }
 
     private void OnBecameInvisible()
@@ -23,7 +22,7 @@ public class Star : MonoBehaviour
 
     void Update()
     {
-        transform.Translate(Vector2.down * speed * Time.deltaTime);
+        
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

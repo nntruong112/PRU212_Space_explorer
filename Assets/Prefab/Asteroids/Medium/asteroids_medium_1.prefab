@@ -211,7 +211,12 @@ MonoBehaviour:
   mediumAsteroid: []
   asteroidDestroySound: {fileID: 8300000, guid: 715fb6a1097409a4d84aac0b1a12c37e, type: 3}
   asteroidAudioSource: {fileID: 3892931491033071887}
+  heartPrefab: {fileID: 6723730761088959610, guid: 103ae0edc7d69014f922794d48651214, type: 3}
+  powerupPrefab: {fileID: 3940635701968852421, guid: fe1021e5c8bb0ef4dab75021f5f5fe23, type: 3}
   explosionPrefab: {fileID: 6192724089161036641, guid: e17d9a3f04750764c8c0a7a0461e4c3b, type: 3}
+  isCoreAsteroid: 0
+  coreBossPrefab: {fileID: 0}
+  isOrbiting: 0
 --- !u!82 &3892931491033071887
 AudioSource:
   m_ObjectHideFlags: 0

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
 public class AudioManager : MonoBehaviour
@@ -9,32 +9,29 @@ public class AudioManager : MonoBehaviour
     private AudioSource currentSource;
     private AudioSource nextSource;
 
-    [Header("Legacy (Optional)")]
-    public AudioClip backgroundMusic;
+    [Header("Music Clips")]
+    public AudioClip stageMusic;
+    public AudioClip bossMusic;
 
-    [Header("Playlist Mode")]
-    public AudioClip[] musicPlaylist;
+    [Header("Settings")]
     public float musicVolume = 0.5f;
     public float fadeDuration = 2f;
-
-    private int currentTrackIndex = -1;
 
     private void Awake()
     {
         if (instance != null && instance != this)
         {
-            Destroy(gameObject);
-            return;
+            Destroy(instance.gameObject); // ✅ Destroy old AudioManager
         }
 
         instance = this;
-        DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(gameObject); // ✅ Persist this one
 
         musicSourceA = gameObject.AddComponent<AudioSource>();
         musicSourceB = gameObject.AddComponent<AudioSource>();
 
-        musicSourceA.loop = false;
-        musicSourceB.loop = false;
+        musicSourceA.loop = true;
+        musicSourceB.loop = true;
 
         musicSourceA.volume = 0f;
         musicSourceB.volume = 0f;
@@ -45,27 +42,23 @@ public class AudioManager : MonoBehaviour
         currentSource = musicSourceA;
         nextSource = musicSourceB;
 
-        if (musicPlaylist != null && musicPlaylist.Length > 0)
+        if (stageMusic != null)
         {
-            currentTrackIndex = Random.Range(0, musicPlaylist.Length); 
-            AudioClip firstClip = musicPlaylist[currentTrackIndex];
-            StartCoroutine(CrossfadeTo(firstClip));
-        }
-        else if (backgroundMusic != null)
-        {
-            currentSource.clip = backgroundMusic;
-            currentSource.loop = true;
-            currentSource.volume = musicVolume;
-            currentSource.Play();
+            StartCoroutine(CrossfadeTo(stageMusic)); // ✅ Begin playback
         }
     }
 
-    private void PlayNextTrack()
+
+    public static void PlayStageMusic()
     {
-        currentTrackIndex = (currentTrackIndex + 1) % musicPlaylist.Length;
-        AudioClip nextClip = musicPlaylist[currentTrackIndex];
-        StartCoroutine(CrossfadeTo(nextClip));
+        if (instance != null && instance.stageMusic != null)
+        {
+            instance.StopAllCoroutines();
+            AudioManager.ChangeMusic(instance.stageMusic, instance.musicVolume); // ✅ STATIC CALL
+        }
     }
+
+
 
     private IEnumerator CrossfadeTo(AudioClip newClip)
     {
@@ -89,17 +82,24 @@ public class AudioManager : MonoBehaviour
         nextSource = temp;
 
         currentSource.volume = musicVolume;
-
-        StartCoroutine(WaitAndPlayNext(currentSource.clip.length));
     }
 
-    private IEnumerator WaitAndPlayNext(float delay)
+    /// <summary>
+    /// Call this to fade from current music to the boss track.
+    /// </summary>
+    public static void TransitionToBossMusic()
     {
-        yield return new WaitForSeconds(delay - fadeDuration);
-        PlayNextTrack();
+        if (instance != null && instance.bossMusic != null)
+        {
+            instance.StopAllCoroutines();
+            instance.StartCoroutine(instance.CrossfadeTo(instance.bossMusic));
+        }
     }
 
-    public static void PlayClip(AudioClip clip, Vector3 position)
+    /// <summary>
+    /// Play 2D sound effect at position with optional volume.
+    /// </summary>
+    public static void PlayClip(AudioClip clip, Vector3 position, float volume = 1f)
     {
         if (clip == null) return;
 
@@ -108,11 +108,15 @@ public class AudioManager : MonoBehaviour
 
         AudioSource source = tempGO.AddComponent<AudioSource>();
         source.clip = clip;
+        source.volume = volume;
         source.Play();
 
         Destroy(tempGO, clip.length);
     }
 
+    /// <summary>
+    /// Change music immediately (no fade).
+    /// </summary>
     public static void ChangeMusic(AudioClip newMusic, float volume = 0.5f)
     {
         if (instance != null)
@@ -121,16 +125,18 @@ public class AudioManager : MonoBehaviour
             instance.musicSourceA.Stop();
             instance.musicSourceB.Stop();
 
-            instance.musicPlaylist = null;
-
             instance.currentSource = instance.musicSourceA;
             instance.currentSource.clip = newMusic;
             instance.currentSource.loop = true;
+            instance.musicVolume = volume;
             instance.currentSource.volume = volume;
             instance.currentSource.Play();
         }
     }
 
+    /// <summary>
+    /// Stop all music playback.
+    /// </summary>
     public static void StopMusic()
     {
         if (instance != null)
@@ -140,24 +146,33 @@ public class AudioManager : MonoBehaviour
             instance.musicSourceB.Stop();
         }
     }
-    public static void ResumeRandomMusic()
-    {
-        if (instance == null) return;
 
-        // If playlist is set, pick a random track and fade to it
-        if (instance.musicPlaylist != null && instance.musicPlaylist.Length > 0)
+    /// <summary>
+    /// Set global music volume (affects fade-in/out target).
+    /// </summary>
+    public static void SetMusicVolume(float volume)
+    {
+        if (instance != null)
         {
-            instance.currentTrackIndex = Random.Range(0, instance.musicPlaylist.Length);
-            AudioClip firstClip = instance.musicPlaylist[instance.currentTrackIndex];
-            instance.StartCoroutine(instance.CrossfadeTo(firstClip));
-        }
-        else if (instance.backgroundMusic != null)
-        {
-            instance.currentSource.clip = instance.backgroundMusic;
-            instance.currentSource.loop = true;
-            instance.currentSource.volume = instance.musicVolume;
-            instance.currentSource.Play();
+            instance.musicVolume = volume;
+            instance.currentSource.volume = volume;
         }
     }
+
+    public static float GetVolume()
+    {
+        return instance != null ? instance.musicVolume : 0.5f;
+    }
+
+    public static void DestroyInstance()
+    {
+        if (instance != null)
+        {
+            Destroy(instance.gameObject);
+            instance = null;
+        }
+    }
+
+
 
 }

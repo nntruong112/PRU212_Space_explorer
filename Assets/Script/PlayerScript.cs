@@ -8,7 +8,8 @@ using UnityEngine.UI;
 public class PlayerScript : MonoBehaviour
 {
     //Playyer property
-    public float moveSpeed = 5f;
+    public float moveSpeed = 7f;
+    public float moveSpeedSlow = 4f;
     private Rigidbody2D rb;
     private Vector2 moveInput;
     private float halfWidth;
@@ -32,8 +33,12 @@ public class PlayerScript : MonoBehaviour
     public LineRenderer lineRenderer;
     public Transform firePoint;
     public float maxDistance = 100f;
+
     public LayerMask hitMask;
-    public float damagePerSecond = 100f;
+
+    public float damage = 1;
+
+    public float damagePerSecond;
     public AudioSource audioSource;
     public AudioClip laserSound;
 
@@ -46,12 +51,53 @@ public class PlayerScript : MonoBehaviour
     public int maxLives = 3;
     public int currentLives;
 
-    public Image[] heartImages; 
+    public Image[] heartImages;
     public Sprite fullHeart;
+
+
+    [SerializeField] private Transform firePointCenter;
+    [SerializeField] private Transform firePointLeft;
+    [SerializeField] private Transform firePointRight;
+
+    [SerializeField] private LineRenderer lineRendererCenter;
+    [SerializeField] private LineRenderer lineRendererLeft;
+    [SerializeField] private LineRenderer lineRendererRight;
+
+    [SerializeField] private GameObject endVFXCenter;
+    [SerializeField] private GameObject endVFXLeft;
+    [SerializeField] private GameObject endVFXRight;
+
+    [SerializeField] private GameObject startVFXCenter;
+    [SerializeField] private GameObject startVFXLeft;
+    [SerializeField] private GameObject startVFXRight;
+
+
+    [SerializeField] private Transform laserCenter;
+    [SerializeField] private Transform laserLeft;
+    [SerializeField] private Transform laserRight;
+
+    private Quaternion leftSpreadRotation;
+    private Quaternion rightSpreadRotation;
+    private Quaternion forwardRotation;
+
+    private bool hasUnlockedSideLasers = false; //flag to track if side lasers are unlocked
+    private bool sideLasersUnlocked = false; // flag to force update
+
+
+    private float shiftLerpT = 0f;  // 0 = spread, 1 = tight
+    [SerializeField] private float rotateDuration = 0.05f; // Duration in seconds
+
 
 
     void Start()
     {
+
+        // Store initial spread rotations
+        leftSpreadRotation = laserLeft.localRotation;
+        rightSpreadRotation = laserRight.localRotation;
+
+        // Assuming center is the "forward" direction
+        forwardRotation = laserCenter.localRotation;
         currentLives = maxLives;
         UpdateHeartsUI();
 
@@ -79,10 +125,29 @@ public class PlayerScript : MonoBehaviour
         particle = new List<ParticleSystem>();
         FillParticles();
         DisableLaser();
+
+        if (damagePerSecond >= 800)
+        {
+            FillParticles(); // Fill particles for multi-beam lasers
+        }
     }
+
 
     void Update()
     {
+
+        if (!hasUnlockedSideLasers && damagePerSecond >= 800)
+        {
+            FillParticles(); // Now adds left/right beams
+            hasUnlockedSideLasers = true;
+
+            // If needed: Enable their GameObjects too
+            startVFXLeft?.SetActive(true);
+            endVFXLeft?.SetActive(true);
+            startVFXRight?.SetActive(true);
+            endVFXRight?.SetActive(true);
+        }
+
         var keyboard = Keyboard.current;
         moveInput = Vector2.zero;
 
@@ -120,43 +185,86 @@ public class PlayerScript : MonoBehaviour
 
     void FixedUpdate()
     {
-        rb.linearVelocity = moveInput * moveSpeed;
+        var keyboard = Keyboard.current;
+        bool isShiftHeld = keyboard.shiftKey.isPressed;
+
+        // Movement
+        float currentMoveSpeed = isShiftHeld ? moveSpeedSlow : moveSpeed;
+        rb.linearVelocity = moveInput * currentMoveSpeed;
+
+        // Shift rotation interpolation
+        float target = isShiftHeld ? 1f : 0f;
+        shiftLerpT = Mathf.MoveTowards(shiftLerpT, target, Time.fixedDeltaTime / rotateDuration);
+
+        // Interpolate rotation
+        laserLeft.localRotation = Quaternion.Lerp(leftSpreadRotation, forwardRotation, shiftLerpT);
+        laserRight.localRotation = Quaternion.Lerp(rightSpreadRotation, forwardRotation, shiftLerpT);
     }
+
     void FireLaser()
     {
-        if (lineRenderer == null || firePoint == null)
+        if (firePointCenter == null || firePointLeft == null || firePointRight == null)
+            return;
+
+        if (lineRendererCenter == null || lineRendererLeft == null || lineRendererRight == null)
             return;
 
         if (audioSource != null && laserSound != null && !audioSource.isPlaying)
         {
-            //audioSource.PlayOneShot(laserSound);
             audioSource.clip = laserSound;
-            audioSource.loop = true; // Enable looping
+            audioSource.loop = true;
             audioSource.Play();
         }
+        if (damagePerSecond >= 300)
+            lineRendererCenter.enabled = true;
 
-        lineRenderer.enabled = true;
+        if (damagePerSecond >= 800)
+            lineRendererLeft.enabled = true;
 
-        for (int i = 0; i < particle.Count; i++)
+        if (damagePerSecond >= 800)
+            lineRendererRight.enabled = true;
+
+        foreach (var p in particle)
         {
-            if (!particle[i].isPlaying)
-                particle[i].Play();
+            if (!p.isPlaying)
+                p.Play();
         }
 
-        ProcessLaser(); // << Core logic here
+        ProcessLaser(); // Call the multi-beam version
     }
 
     void UpdateLaser()
     {
         ProcessLaser(); // Call the same logic every frame
+        
     }
 
     void ProcessLaser()
+    {
+        // Center Laser
+        if (damagePerSecond >= 300)
+            ProcessSingleLaser(firePointCenter, lineRendererCenter, endVFXCenter, startVFXCenter);
+
+        // Left Laser
+        if (damagePerSecond >= 800)
+            ProcessSingleLaser(firePointLeft, lineRendererLeft, endVFXLeft, startVFXLeft);
+
+        //Right Laser
+        if (damagePerSecond >= 800)
+            ProcessSingleLaser(firePointRight, lineRendererRight, endVFXRight, startVFXRight);
+
+
+
+    }
+    void ProcessSingleLaser(Transform firePoint, LineRenderer lineRenderer, GameObject endVFX, GameObject startVFX)
     {
         Vector3 startPos = firePoint.position;
         Vector2 dir = firePoint.up.normalized;
 
         lineRenderer.SetPosition(0, startPos);
+
+        if (startVFX != null)
+            startVFX.transform.position = startPos;
 
         RaycastHit2D hit = Physics2D.Raycast(startPos, dir, maxDistance, hitMask);
         Vector3 endPos;
@@ -166,19 +274,9 @@ public class PlayerScript : MonoBehaviour
             endPos = hit.point;
 
             if (endVFX != null)
-                endVFX.transform.position = hit.point;
+                endVFX.transform.position = endPos;
 
-            if (hit.collider.CompareTag("Asteroid"))
-            {
-                Asteroid asteroid = hit.collider.GetComponent<Asteroid>() ??
-                                    hit.collider.GetComponentInParent<Asteroid>();
-
-                if (asteroid != null)
-                {
-                    float damage = damagePerSecond * Time.deltaTime;
-                    asteroid.TakeDamage(damage);
-                }
-            }
+            ApplyDamage(hit.collider);
         }
         else
         {
@@ -189,20 +287,22 @@ public class PlayerScript : MonoBehaviour
         }
 
         lineRenderer.SetPosition(1, endPos);
-
-        //Debug.Log($"StartPos: {startPos}, EndPos: {endPos}");
     }
 
 
 
     public void DisableLaser()
     {
-        lineRenderer.enabled = false;
+        lineRendererCenter.enabled = false;
+        lineRendererLeft.enabled = false;
+        lineRendererRight.enabled = false;
+
         if (audioSource != null && audioSource.isPlaying)
         {
             audioSource.Stop();
             audioSource.loop = false;
         }
+
         for (int i = 0; i < particle.Count; i++)
         {
             if (particle[i].isPlaying)
@@ -210,61 +310,82 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
+
     void FillParticles()
     {
-        // Include ParticleSystem on startVFX itself
-        ParticleSystem psStart = startVFX.GetComponent<ParticleSystem>();
-        if (psStart != null)
-            particle.Add(psStart);
+        particle.Clear(); // Prevent duplicates
 
-        // Include child ParticleSystems of startVFX
-        for (int i = 0; i < startVFX.transform.childCount; i++)
+        void AddParticlesFrom(GameObject vfx)
         {
-            ParticleSystem ps = startVFX.transform.GetChild(i).GetComponent<ParticleSystem>();
-            if (ps != null)
-                particle.Add(ps);
+            if (vfx == null) return;
+
+            ParticleSystem psMain = vfx.GetComponent<ParticleSystem>();
+            if (psMain != null)
+                particle.Add(psMain);
+
+            for (int i = 0; i < vfx.transform.childCount; i++)
+            {
+                ParticleSystem psChild = vfx.transform.GetChild(i).GetComponent<ParticleSystem>();
+                if (psChild != null)
+                    particle.Add(psChild);
+            }
         }
 
-        // Include ParticleSystem on endVFX itself
-        ParticleSystem psEnd = endVFX.GetComponent<ParticleSystem>();
-        if (psEnd != null)
-            particle.Add(psEnd);
+        // Always include center lasers
+        AddParticlesFrom(startVFXCenter);
+        AddParticlesFrom(endVFXCenter);
 
-        // Include child ParticleSystems of endVFX
-        for (int i = 0; i < endVFX.transform.childCount; i++)
+        // Add side lasers only if allowed
+        if (damagePerSecond >= 800)
         {
-            ParticleSystem ps = endVFX.transform.GetChild(i).GetComponent<ParticleSystem>();
-            if (ps != null)
-                particle.Add(ps);
+            AddParticlesFrom(startVFXLeft);
+            AddParticlesFrom(endVFXLeft);
+            AddParticlesFrom(startVFXRight);
+            AddParticlesFrom(endVFXRight);
         }
     }
+
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (isInvulnerable) return;
-        if (collision.CompareTag("Asteroid"))
+
+            if (collision.CompareTag("Asteroid") ||
+            collision.CompareTag("Bullet") ||
+            collision.CompareTag("BossMap3") ||
+            collision.CompareTag("Shield") ||
+            collision.CompareTag("Enemy") ||
+            collision.CompareTag("Enemy2") ||
+            collision.CompareTag("Enemy2_2"))
         {
-            GameManager.Instance.HandlePlayerCollision(
-                gameObject,
-                collisionSound,
-                explosionPrefab,
-                1f,
-                new Vector3(0f, -3.513863f, 0f)
-            );
-            currentLives--;
+                currentLives--;
 
-            UpdateHeartsUI();
+                UpdateHeartsUI();
 
-            if (currentLives <= 0)
-            {
-                // Game over: destroy player or trigger death
-                GameManager.Instance.HandleGameOver();
-                Destroy(gameObject);
-                // Optionally: trigger game over screen
+                if (currentLives <= 0)
+                {
+                    if (explosionPrefab != null)
+                        Instantiate(explosionPrefab, transform.position, Quaternion.identity);
+
+                    if (collisionSound != null)
+                        AudioManager.PlayClip(collisionSound, transform.position);
+
+                    GameManager.Instance.HandleGameOver();
+                    Destroy(gameObject);
+                }
+                else
+                {
+                    StartCoroutine(BlinkDuringInvulnerability());
+                    GameManager.Instance.HandlePlayerCollision(
+                        gameObject,
+                        collisionSound,
+                        explosionPrefab,
+                        1f,
+                        new Vector3(0f, -3.513863f, 0f)
+                    );
+                }
             }
-
         }
-    }
     public IEnumerator BlinkDuringInvulnerability()
     {
         isInvulnerable = true;
@@ -302,10 +423,63 @@ public class PlayerScript : MonoBehaviour
         isInvulnerable = false;
     }
 
+    void ApplyDamage(Collider2D collider)
+    {
+        float damage = damagePerSecond * Time.deltaTime;
+
+        if (collider.CompareTag("Asteroid"))
+        {
+            var asteroid = collider.GetComponent<Asteroid>() ?? collider.GetComponentInParent<Asteroid>();
+            asteroid?.TakeDamage(damage);
+        }
+        else if (collider.CompareTag("CoreBoss"))
+        {
+            var coreBoss = collider.GetComponent<CoreBoss>() ?? collider.GetComponentInParent<CoreBoss>();
+            coreBoss?.TakeDamage(damage);
+        }
+        else if (collider.CompareTag("BossMap3"))
+        {
+            var boss = collider.GetComponent<BossMovement>() ?? collider.GetComponentInParent<BossMovement>();
+            boss?.TakeDamage(damage);
+        }
+        else if (collider.CompareTag("Shield"))
+        {
+            var shield = collider.GetComponent<ShieldBehavior>() ?? collider.GetComponentInParent<ShieldBehavior>();
+            shield?.TakeDamage(damage);
+        }
+        else if (collider.CompareTag("Enemy"))
+        {
+            var enemy = collider.GetComponent<Enemy3Movement>() ?? collider.GetComponentInParent<Enemy3Movement>();
+            enemy?.TakeDamage(damage);
+        }
+        else if (collider.CompareTag("Enemy2"))
+        {
+            var enemy = collider.GetComponent<EnemyController>() ?? collider.GetComponentInParent<EnemyController>();
+            enemy?.TakeDamage(damage);
+        }
+        else if (collider.CompareTag("Enemy2_2"))
+        {
+            var enemy = collider.GetComponent<VerticalEnemyController>() ?? collider.GetComponentInParent<VerticalEnemyController>();
+            enemy?.TakeDamage(damage);
+        }
+        else if (collider.CompareTag("BossMap2"))
+        {
+            var enemy = collider.GetComponent<EnemyBossController>() ?? collider.GetComponentInParent<EnemyBossController>();
+            enemy?.TakeDamage(damage);
+        }
+    }
+
     void UpdateHeartsUI()
     {
+        Debug.Log("Updating Hearts. Lives left: " + currentLives);
         for (int i = 0; i < heartImages.Length; i++)
         {
+            if (heartImages[i] == null)
+            {
+                Debug.LogWarning("Heart image at index " + i + " is not assigned!");
+                continue;
+            }
+
             if (i < currentLives)
             {
                 heartImages[i].gameObject.SetActive(true);
@@ -317,5 +491,30 @@ public class PlayerScript : MonoBehaviour
             }
         }
     }
+
+
+
+    public void IncreaseDamage(float amount)
+    {
+        if (damagePerSecond == 1000)
+        {
+            return;
+        }
+
+        damagePerSecond += amount;
+
+        Debug.Log("New Damage: " + damage);
+        Debug.Log("Updated Damage Per Second: " + damagePerSecond);
+    }
+
+    public void IncreaseHeart()
+    {
+        Debug.Log("Increase Hearts. Lives left: " + currentLives);
+        if (currentLives < maxLives)
+            currentLives++;
+
+        UpdateHeartsUI();
+    }
+
 
 }

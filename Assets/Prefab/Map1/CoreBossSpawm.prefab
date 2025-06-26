@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7060967610891277191
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1332823713829340435}
+  - component: {fileID: 2753502855850749352}
+  m_Layer: 0
+  m_Name: CoreBossSpawm
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1332823713829340435
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7060967610891277191}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.14212, y: -0.13, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2753502855850749352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7060967610891277191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9d64c2e997854f45a4da97de5f7b1ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coreBossDebugPrefab: {fileID: 720135145037961379, guid: 4ab01aa022d749d4a9ae5cae8e7dbcc4, type: 3}
+  satelliteAsteroidPrefab: {fileID: 781973199366486175, guid: 6a2d31205bd8baf4d96d719aedc321c5, type: 3}
+  bulletAsteroidPrefab: {fileID: 781973199366486175, guid: 526a020a9a33061419ae6ee31ce08692, type: 3}
+  coreShield: {fileID: 8563464996953679638, guid: 54f63cad68179c046b9b05675090039a, type: 3}
+  coreBossPhase2Prefab: {fileID: 6237386220319046842, guid: 1724eddf0f89f894480c5e5ec25f0e3b, type: 3}
+  phase2AttackAsteroidPrefab: {fileID: 781973199366486175, guid: 526a020a9a33061419ae6ee31ce08692, type: 3}
+  phase2AttackDelay: 0.8
+  orbitRadius: 2
+  orbitSpeed: 30
+  satelliteCount: 10
+  coreMoveSpeed: 0.2
+  fireCooldown: 3
+  bulletCount: 7
+  bulletSpeed: 2
+  debugMode: 0
